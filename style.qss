@@ -1,0 +1,21 @@
+QFrame#QCard {
+    border: 2px solid #3C3D37;
+    padding: 1px;
+    color: #ECDFCC;
+    background-color: #181C14;
+    border-radius: 12px
+}
+QFrame#QCard:hover {
+    background-color: lightblue;
+}
+QLabel#name, QLabel#attrs {
+    border: 1px solid lightblue;
+    padding: 5px;
+    color: #ECDFCC;
+    border-radius: 6px;
+    background-color: #3C3D37;
+}
+QLabel#img {
+    border: 2px solid red;
+    border-radius: 6px;
+}
