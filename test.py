@@ -1,98 +1,106 @@
-from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout, QPushButton, QStackedWidget, QLabel
-from PySide6.QtCore import Qt
-import sys
 
-class MainWindow(QWidget):
-    def __init__(self):
-        super().__init__()
+import bs4.element
+import requests
+from bs4 import BeautifulSoup, NavigableString, PageElement
 
-        self.setWindowTitle("Multi-page App")
-        self.setGeometry(100, 100, 600, 400)
 
-        # Создаем QStackedWidget
-        self.stacked_widget = QStackedWidget(self)
+def get_page(link: str) -> BeautifulSoup:
+    header = {
+        'user-agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36 Edg/133.0.0.0'
+    }
+    r = requests.get(link, headers=header)
+    html = BeautifulSoup(r.content, 'lxml')
+    return html
 
-        # Страницы
-        self.page1 = self.create_main_menu_page()
-        self.page2 = self.create_settings_page()
-        self.page3 = self.create_search_page()
 
-        # Добавляем страницы в QStackedWidget
-        self.stacked_widget.addWidget(self.page1)
-        self.stacked_widget.addWidget(self.page2)
-        self.stacked_widget.addWidget(self.page3)
+def decider(__url=None):
+    if __url is None:
+        __url = 'https://rezka.ag/'
+    if __url.__contains__('html'):
+        __pg = Page(get_page(__url))
+    else:
+        __pg = CardsGenerator(get_page(__url))
+    return __pg
 
-        # Кнопки для навигации
-        self.nav_buttons = self.create_navigation_buttons()
 
-        # Размещение кнопок и стека виджетов
-        layout = QVBoxLayout()
-        layout.addWidget(self.nav_buttons)
-        layout.addWidget(self.stacked_widget)
+class Page:
+    """Парсер данных из странички тайтла"""
+    def __init__(self, html: BeautifulSoup):
+        self.__html = html
 
-        self.setLayout(layout)
+    def attributes(self) -> dict:
+        rows = self.__html.find('table').find_all('tr')
+        res = dict()
+        for row in rows:
+            cells = row.find_all('td')
+            res[cells[0].find('h2').text.strip()] = self._recursive_finder(cells[-1])
+        for k, v in res.items():
+            if k in v:
+                v.remove(k)
+        return res
 
-    def create_main_menu_page(self):
-        # Страница главного меню
-        page = QWidget()
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("Главное меню"))
-        page.setLayout(layout)
-        return page
+    def _recursive_finder(self, node, results=None) -> list:
+        if results is None:
+            results = []
+        if node.name == 'a':
+            results.append([node.text.strip(), node.get('href', '') if node.get('href', '').startswith('h') else (
+                    'https://rezka.ag' + node.get('href', ''))])
+        elif isinstance(node, NavigableString):
+            if node.strip() != '' and node.strip() != ':' and node.strip() != ',':
+                results.append(node.strip())
+        elif node.contents:
+            for child in node.children:
+                # print(child.text)
+                self._recursive_finder(child, results)
+        else:
+            results.append(node.text.strip())
+        return results
 
-    def create_settings_page(self):
-        # Страница настроек
-        page = QWidget()
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("Настройки"))
-        page.setLayout(layout)
-        return page
 
-    def create_search_page(self):
-        # Страница поиска
-        page = QWidget()
-        layout = QVBoxLayout()
-        layout.addWidget(QLabel("Поиск"))
-        page.setLayout(layout)
-        return page
+class CardsGenerator:
+    def __init__(self, html: BeautifulSoup):
+        self.__html = html
 
-    def create_navigation_buttons(self):
-        # Кнопки для переключения страниц
-        widget = QWidget()
-        button_layout = QVBoxLayout()
+    def cards(self):
+        res = list()
+        for __card in self.__html.find_all('div', attrs={'class': 'b-content__inline_item'}):
+            res.append(Card(__card))
+        return res
 
-        # Кнопка для главного меню
-        button_main_menu = QPushButton("Главное меню")
-        button_main_menu.clicked.connect(self.show_main_menu)
-        button_layout.addWidget(button_main_menu)
 
-        # Кнопка для настроек
-        button_settings = QPushButton("Настройки")
-        button_settings.clicked.connect(self.show_settings)
-        button_layout.addWidget(button_settings)
+class Card:
+    # Парсер карточек из страницы выбора
+    # На вход принимает тег карточки
+    def __init__(self, html: PageElement | bs4.Tag):
+        self.__html = html
 
-        # Кнопка для поиска
-        button_search = QPushButton("Поиск")
-        button_search.clicked.connect(self.show_search)
-        button_layout.addWidget(button_search)
+    def get_img(self) -> bytes:
+        link = self.__html.find('img').get('src', '')
+        byte_array = requests.get(link).content
+        return byte_array
 
-        widget.setLayout(button_layout)
-        return widget
+    def get_link(self) -> str:
+        return self.__html.find(attrs={'class': 'b-content__inline_item-link'}).find('a').get('href', '')
 
-    def show_main_menu(self):
-        # Переключить на главную страницу
-        self.stacked_widget.setCurrentWidget(self.page1)
+    def get_name(self) -> str:
+        return self.__html.find(attrs={'class': 'b-content__inline_item-link'}).find('a').text
 
-    def show_settings(self):
-        # Переключить на страницу настроек
-        self.stacked_widget.setCurrentWidget(self.page2)
+    def get_attrs(self) -> str:
+        return self.__html.find(attrs={'class': 'b-content__inline_item-link'}).find('div').text
 
-    def show_search(self):
-        # Переключить на страницу поиска
-        self.stacked_widget.setCurrentWidget(self.page3)
+    def attributes(self) -> dict[str, str]:
+        res = dict()
+        res['Иконка'] = self.get_img()
+        res['Ссылка'] = self.get_link()
+        res['Название'] = self.get_name()
+        res['Аттрибуты'] = self.get_attrs()
+        return res
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = MainWindow()
-    window.show()
-    sys.exit(app.exec())
+
+if __name__ == '__main__':
+    url = 'https://rezka.ag/'
+    pg = decider(url)
+    i = 1
+    for card in pg.cards():
+        print(f'{i}) {card.get_name():50} : {card.get_attrs()}')
+        i += 1
