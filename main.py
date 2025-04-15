@@ -33,13 +33,13 @@ class Page:
         res = dict()
         for row in rows:
             cells = row.find_all('td')
-            res[cells[0].find('h2').text.strip()] = self.recursive_finder(cells[-1])
+            res[cells[0].find('h2').text.strip()] = self._recursive_finder(cells[-1])
         for k, v in res.items():
             if k in v:
                 v.remove(k)
         return res
 
-    def recursive_finder(self, node, results=None) -> list:
+    def _recursive_finder(self, node, results=None) -> list:
         if results is None:
             results = []
         if node.name == 'a':
@@ -51,7 +51,7 @@ class Page:
         elif node.contents:
             for child in node.children:
                 # print(child.text)
-                self.recursive_finder(child, results)
+                self._recursive_finder(child, results)
         else:
             results.append(node.text.strip())
         return results

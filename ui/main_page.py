@@ -1,22 +1,8 @@
 import requests
 from PySide6.QtCore import QByteArray
 from PySide6.QtGui import QPixmap
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QLabel, QVBoxLayout, QFrame, QGridLayout, QScrollArea, \
-    QHBoxLayout, QLineEdit, QPushButton
-
-
-class MainWindow(QMainWindow):
-    def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle('My App')
-
-        widget = QWidget()
-        self.page = QMainPage()
-        layout = QVBoxLayout(self)
-        layout.addWidget(self.page)
-        widget.setLayout(layout)
-        self.setCentralWidget(widget)
+from PySide6.QtWidgets import QFrame, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QScrollArea, \
+    QGridLayout
 
 
 class QCard(QFrame):
@@ -124,15 +110,3 @@ class QMainPage(QWidget):
         main_layout.addWidget(self.scroller)
 
         self.setLayout(main_layout)
-
-
-app = QApplication([])
-
-with open('style.qss', 'r') as f:
-    style = f.read()
-    app.setStyleSheet(style)
-
-window = MainWindow()
-window.show()
-
-app.exec()
