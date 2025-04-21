@@ -1,9 +1,11 @@
-import requests
 from PySide6.QtCore import QByteArray
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QFrame, QVBoxLayout, QLabel, QWidget, QHBoxLayout, QPushButton, QLineEdit, QScrollArea, \
     QGridLayout
+from qasync import asyncSlot
 
+from app.core.fetcher import Fetcher
+from app.core.parser import Parser
 
 class QCard(QFrame):
     """Кастомный виджет карточки проекта"""
@@ -21,14 +23,6 @@ class QCard(QFrame):
         # Описание параметров
 
         # Описание параметров изображения проекта
-        self.byteArray = requests.get(img_link).content
-        self.pixmap = QPixmap()
-        self.pixmap.loadFromData(QByteArray(self.byteArray))
-        self.img = QLabel()
-        self.img.setPixmap(self.pixmap)
-        self.img.setScaledContents(True)
-        self.img.setFixedSize(177, 256)
-        self.img.setObjectName('img')
 
         # Описание настроек поля имени класса
         self.name = QLabel(name)
